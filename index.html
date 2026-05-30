@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>大乐透 · 数据可视化</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #fef7e8;
+            background-image: radial-gradient(circle at 10% 20%, #fff6e6 2%, #f8efdd 100%);
+            font-family: 'Segoe UI', 'Roboto', 'Poppins', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            padding: 32px 28px;
+            color: #2c2416;
+            font-size: 15px;
+            line-height: 1.45;
+        }
+        .dashboard { max-width: 1600px; margin: 0 auto; }
+        .hero {
+            margin-bottom: 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            border-bottom: 3px solid #d4af37;
+            padding-bottom: 20px;
+            background: rgba(255, 252, 240, 0.6);
+            border-radius: 42px 42px 0 0;
+            padding: 20px 30px 16px 30px;
+        }
+        .title h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a0762c, #d4af37, #b8860b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .title p { color: #7a622e; margin-top: 8px; font-size: 15px; }
+        .badge {
+            background: #ffffffcc;
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            padding: 8px 24px;
+            border: 1px solid #e0b354;
+            font-weight: 600;
+            font-size: 15px;
+            color: #8b6f2c;
+        }
+        .card {
+            margin-bottom: 48px;
+            background: #ffffff;
+            border-radius: 36px;
+            border: 1px solid #ece0cc;
+            box-shadow: 0 16px 28px -12px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+        }
+        .card:hover { border-color: #d4af37; box-shadow: 0 20px 32px -12px rgba(170, 120, 30, 0.2); }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 18px 28px 10px 28px;
+            background: #fefaf2;
+            border-bottom: 2px solid #f1e5d0;
+        }
+        .icon {
+            background: #fff6e5;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 32px;
+            font-size: 1.8rem;
+            color: #c9a53b;
+            border: 1px solid #ecdcaa;
+        }
+        .card-header h2 { font-size: 1.5rem; font-weight: 700; color: #4a381c; }
+        .card-header span { font-size: 0.9rem; color: #b49454; margin-left: 12px; }
+        .dual {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            padding: 24px 30px 32px 30px;
+        }
+        .chart-box {
+            flex: 1.5;
+            min-width: 300px;
+            background: #fefcf7;
+            border-radius: 32px;
+            padding: 12px 6px 6px 6px;
+            border: 1px solid #efeadf;
+        }
+        .table-box {
+            flex: 1;
+            min-width: 300px;
+            background: #fefcf7;
+            border-radius: 32px;
+            border: 1px solid #efe3cf;
+            display: flex;
+            flex-direction: column;
+        }
+        .table-box h4 { padding: 16px 22px 6px 22px; font-size: 16px; color: #b49145; font-weight: 700; border-bottom: 1px dashed #e7dcbf; }
+        .scroll { max-height: 380px; overflow-y: auto; padding: 0 16px 16px 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 15px; font-family: 'Segoe UI', monospace; }
+        th { background: #f7efe0; padding: 12px 8px; color: #7a5f2a; font-weight: 700; position: sticky; top: 0; font-size: 15px; }
+        td { padding: 10px 6px; text-align: center; border-bottom: 1px solid #f0e4d2; color: #3a2e17; font-size: 15px; }
+        .pos { color: #1f8a3e; font-weight: bold; }
+        .neg { color: #cb3b2a; font-weight: bold; }
+        .chart { width: 100%; height: 400px; }
+        .footer { text-align: center; margin-top: 40px; font-size: 15px; color: #a48f60; border-top: 1px solid #e6d9bf; padding-top: 24px; }
+        @media (max-width: 860px) {
+            body { padding: 20px; }
+            .card-header h2 { font-size: 1.3rem; }
+            .chart { height: 300px; }
+            .dual { flex-direction: column; }
+            th, td { font-size: 14px; padding: 8px 4px; }
+        }
+        .scroll::-webkit-scrollbar { width: 8px; }
+        .scroll::-webkit-scrollbar-track { background: #efe2cf; border-radius: 12px; }
+        .scroll::-webkit-scrollbar-thumb { background: #c9a53b; border-radius: 12px; }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="hero">
+        <div class="title">
+            <h1><i class="fas fa-chart-line"></i> 大乐透 · 数据可视化</h1>
+            <p>前区和值 · 跨度 · 区间比 · 前区奇偶比 · 前区大小比 · 连号组数 · AC值 · 后区奇偶 · 后区大小 | 最小字号15px | 悬浮即见详情</p>
+        </div>
+        <div class="badge"><i class="fas fa-database"></i> 2,876期真实数据</div>
+    </div>
+
+    <!-- ========== 9个独立卡片，每个容器ID唯一，绝不共用 ========== -->
+
+    <!-- 1. 前区和值 -->
+    <div class="card"><div class="card-header"><div class="icon"><i class="fas fa-chart-line"></i></div><h2>前区和值分布 <span>区间 49~168</span></h2></div><div class="dual"><div class="chart-box"><div id="c01_front" class="chart"></div></div><div class="table-box"><h4>偏差明细表</h4><div class="scroll"><table id="t01_front"><thead><tr><th>区间</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+    <!-- 2. 跨度 -->
+    <div class="card"><div class="card-header"><div class="icon"><i class="fas fa-arrows-alt-h"></i></div><h2>前区跨度分布 <span>跨度区间 4~34</span></h2></div><div class="dual"><div class="chart-box"><div id="c02_span" class="chart"></div></div><div class="table-box"><h4>跨度偏差分析</h4><div class="scroll"><table id="t02_span"><thead><tr><th>跨度区间</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+    <!-- 3. 区间比 -->
+    <div class="card"><div class="card-header"><div class="icon"><i class="fas fa-layer-group"></i></div><h2>三区区间比 <span>1-12 / 13-24 / 25-35</span></h2></div><div class="dual"><div class="chart-box"><div id="c03_ratio" class="chart"></div></div><div class="table-box"><h4>区间组合偏差</h4><div class="scroll"><table id="t03_ratio"><thead><tr><th>区间比</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+    <!-- 4. 前区奇偶比（独立容器） -->
+    <div class="card"><div class="card-header"><div class="icon"><i class="fas fa-venus-mars"></i></div><h2>前区奇偶比 <span>奇数 : 偶数</span></h2></div><div class="dual"><div class="chart-box"><div id="c04_parity" class="chart"></div></div><div class="table-box"><h4>奇偶形态偏差</h4><div class="scroll"><table id="t04_parity"><thead><tr><th>奇偶比</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+    <!-- 5. 前区大小比 -->
+    <div class="card"><div class="card-header"><div class="icon"><i class="fas fa-weight-hanging"></i></div><h2>前区大小比 <span>1-17小 / 18-35大</span></h2></div><div class="dual"><div class="chart-box"><div id="c05_size" class="chart"></div></div><div class="table-box"><h4>大小组合对照</h4><div class="scroll"><table id="t05_size"><thead><tr><th>大小比</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+    <!-- 6. 连号组数 -->
+    <div class="card"><div class="card-header"><div class="icon"><i class="fas fa-link"></i></div><h2>连号组数分布 <span>0组 / 1组 / ≥2组</span></h2></div><div class="dual"><div class="chart-box"><div id="c06_consecutive" class="chart"></div></div><div class="table-box"><h4>连号频率统计</h4><div class="scroll"><table id="t06_consecutive"><thead><tr><th>连号组数</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+    <!-- 7. AC值 -->
+    <div class="card"><div class="card-header"><div class="icon"><i class="fas fa-calculator"></i></div><h2>AC值分布 <span>复杂度 1~6</span></h2></div><div class="dual"><div class="chart-box"><div id="c07_ac" class="chart"></div></div><div class="table-box"><h4>AC值偏差统计</h4><div class="scroll"><table id="t07_ac"><thead><tr><th>AC值</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+    <!-- 8. 后区奇偶组合 -->
+    <div class="card"><div class="card-header"><div class="icon"><i class="fas fa-circle-half-stroke"></i></div><h2>后区奇偶组合 <span>2奇 / 1奇1偶 / 0奇</span></h2></div><div class="dual"><div class="chart-box"><div id="c08_backparity" class="chart"></div></div><div class="table-box"><h4>后区奇偶形态</h4><div class="scroll"><table id="t08_backparity"><thead><tr><th>组合</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+    <!-- 9. 后区大小组合 -->
+    <div class="card"><div class="card-header"><div class="icon"><i class="fas fa-expand-arrows-alt"></i></div><h2>后区大小组合 <span>2大 / 1大1小 / 0大</span></h2></div><div class="dual"><div class="chart-box"><div id="c09_backsize" class="chart"></div></div><div class="table-box"><h4>后区大小分布</h4><div class="scroll"><table id="t09_backsize"><thead><tr><th>组合</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+    <div class="footer"><i class="fas fa-chart-simple"></i> 柱状图：实际占比 (%) · 深金色虚线：理论占比基准线 · 悬浮显示完整数据 · 全局最小15px</div>
+</div>
+
+<script>
+// ======================= 数据集（完整，不含后区和值） ========================
+const frontSum = [["49-58",149,0.051808066759388,0.0465511717883634,0.0052568949710246],["59-68",240,0.0834492350486787,0.089997289238276,-0.00654805418959724],["69-78",339,0.117872044506259,0.138575371497573,-0.0207033269913139],["79-88",480,0.166898470097357,0.173501071983045,-0.00660260188568799],["89-98",503,0.174895688456189,0.178556026516178,-0.00366033805998917],["99-108",403,0.140125173852573,0.151436087631534,-0.0113109137789605],["109-118",342,0.118915159944367,0.104755538579068,0.0141596213652992],["119-128",200,0.0695410292072323,0.0582536533675054,0.0112873758397269],["129-138",99,0.03442280945758,0.0249667315606595,0.00945607789692052],["139-148",41,0.0142559109874826,0.00776263584612731,0.00649327514135531],["149-158",6,0.00208623087621697,0.00147859730402425,0.000607633572192719],["159-168",4,0.00139082058414465,8.93319204514651e-05,0.00130148866369318]];
+const span = [["4-6",5,0.00173852573018081,0.00135846127307228,0.000380064457108528],["7-9",29,0.0100834492350487,0.00912109711919959,0.000962352115849092],["10-12",84,0.0292072322670376,0.0270306069641933,0.00217662530284425],["13-15",178,0.0618915159944367,0.0558355306932157,0.00605598530122102],["16-18",257,0.0893602225312935,0.09329024865078,-0.00393002611948651],["19-21",353,0.122739916550765,0.13415498164075,-0.0114150650899852],["22-24",458,0.159248956884562,0.170195790926341,-0.0109468340417793],["25-27",542,0.1884561891516,0.190184578230119,-0.00172838907851958],["28-30",540,0.187760778859527,0.179899085734,0.0078616931255268],["31-33",363,0.126216968011127,0.122122896079253,0.00409407193187374],["34-34",67,0.0232962447844228,0.0168067226890756,0.00648952209534718]];
+const ratio = [["2:1:2",436,0.151599443671766,0.134182705340201,0.0174167383315657],["2:2:1",397,0.138038942976356,0.147600975874221,-0.00956203289786462],["1:2:2",360,0.125173852573018,0.134182705340201,-0.00900885276718253],["1:1:3",229,0.079624478442281,0.0731905665492003,0.00643391189308062],["1:3:1",214,0.0744089012517386,0.0894551368934671,-0.0150462356417286],["3:1:1",214,0.0744089012517386,0.0894551368934671,-0.0150462356417286],["0:2:3",129,0.0448539638386648,0.0335456763350502,0.0113082875036147],["3:2:0",126,0.0438108484005563,0.0447275684467336,-0.000916720046177204],["2:0:3",125,0.0434631432545202,0.0335456763350502,0.00991746691947002],["2:3:0",117,0.0406815020862309,0.0447275684467336,-0.00404606636050266],["0:3:2",109,0.0378998609179416,0.0372729737056113,0.000626887212330307],["3:0:2",97,0.0337273991655077,0.0372729737056113,-0.00354557454010363],["4:1:0",62,0.021557719054242,0.0182976416373001,0.00326007741694192],["4:0:1",58,0.0201668984700974,0.0167728381675251,0.00339406030257228],["1:0:4",53,0.0184283727399166,0.0121984277582001,0.0062299449817165],["0:1:4",50,0.0173852573018081,0.0121984277582001,0.00518682954360801],["0:4:1",41,0.0142559109874826,0.0167728381675251,-0.00251692718004246],["1:4:0",41,0.0142559109874826,0.0182976416373001,-0.00404173064981747],["0:0:5",8,0.00278164116828929,0.00142314990512334,0.00135849126316595],["5:0:0",6,0.00208623087621697,0.00243968555164001,-0.000353454675423043],["0:5:0",4,0.00139082058414465,0.00243968555164001,-0.00104886496749537]];
+const parity = [["0:5",46,0.0159944367176634,0.0190615835777126,-0.00306714686004919],["1:4",358,0.124478442280946,0.131964809384164,-0.00748636710321845],["2:3",880,0.305980528511822,0.320485965647256,-0.014505437135434],["3:2",1048,0.364394993045897,0.341851696690406,0.0225432963554907],["4:1",466,0.162030598052851,0.160242982823628,0.00178761522922322],["5:0",78,0.0271210013908206,0.0263929618768328,0.00072803951398774]];
+const size = [["0:5",58,0.0201668984700974,0.0190615835777126,0.00110531489238475],["1:4",359,0.124826147426982,0.131964809384164,-0.00713866195718229],["2:3",832,0.289290681502086,0.320485965647256,-0.0311952841451697],["3:2",996,0.346314325452017,0.341851696690406,0.00446262876161029],["4:1",522,0.181502086230876,0.160242982823628,0.0212591034072483],["5:0",109,0.0378998609179416,0.0263929618768328,0.0115068990411087]];
+const consecutive = [["0",1443,0.501738525730181,0.523395721925134,-0.0216571961949529],["1",1267,0.440542420027816,0.42923987776929,0.0113025422585269],["2组+",166,0.0577190542420028,0.0473644003055768,0.010354653936426]];
+const ac = [[1,4,0.00139082058414465,0.00155560758027551,-0.000164786996130867],[2,79,0.0274687065368568,0.0255828137706696,0.00188589276618719],[3,123,0.0427677329624479,0.0452820424357426,-0.00251430947329478],[4,718,0.249652294853964,0.245360900958624,0.00429139389533994],[5,721,0.250695410292072,0.259604721654058,-0.00890931136198518],[6,1231,0.428025034770515,0.422194977697824,0.00583005707269059]];
+const backParity = [["2奇0偶",643,0.223574408901252,0.227272727272727,-0.00369831837147551],["1奇1偶",1604,0.557719054242003,0.545454545454546,0.0122645087874574],["0奇2偶",629,0.218706536856746,0.227272727272727,-0.0085661904159818]];
+const backSize = [["2大0小",658,0.228789986091794,0.227272727272727,0.00151725881906689],["1大1小",1603,0.557371349095967,0.545454545454546,0.0119168036414212],["0大2小",615,0.213838664812239,0.227272727272727,-0.013434062460488]];
+
+// 表格填充
+function fillTable(tid, data) {
+    const tbody = document.querySelector(`#${tid} tbody`);
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    for (const row of data) {
+        const dev = row[4];
+        const cls = dev >= 0 ? 'pos' : 'neg';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td style="font-weight:500;">${row[0]}</td><td>${row[1]}</td><td>${(row[2]*100).toFixed(2)}%</td><td>${(row[3]*100).toFixed(2)}%</td><td class="${cls}">${(dev*100).toFixed(4)}%</td>`;
+        tbody.appendChild(tr);
+    }
+}
+fillTable("t01_front", frontSum);
+fillTable("t02_span", span);
+fillTable("t03_ratio", ratio);
+fillTable("t04_parity", parity);
+fillTable("t05_size", size);
+fillTable("t06_consecutive", consecutive);
+fillTable("t07_ac", ac);
+fillTable("t08_backparity", backParity);
+fillTable("t09_backsize", backSize);
+
+// 图表构建函数（所有文字≥15px）
+function makeChart(domId, xAxis, dataset, yMax) {
+    const dom = document.getElementById(domId);
+    if (!dom) return;
+    const chart = echarts.init(dom);
+    const actual = dataset.map(r => r[2] * 100);
+    const theory = dataset.map(r => r[3] * 100);
+    const counts = dataset.map(r => r[1]);
+    const devs = dataset.map(r => r[4] * 100);
+    chart.setOption({
+        tooltip: {
+            trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: (params) => {
+                const idx = params[0].dataIndex;
+                return `<strong style="font-size:15px">${xAxis[idx]}</strong><br/>
+                        <span style="font-size:15px">📊 实际占比: ${actual[idx].toFixed(2)}%</span><br/>
+                        <span style="font-size:15px">📐 理论占比: ${theory[idx].toFixed(2)}%</span><br/>
+                        <span style="font-size:15px">⚖️ 偏差: ${devs[idx]>=0?'+':''}${devs[idx].toFixed(4)}%</span><br/>
+                        <span style="font-size:15px">🎯 实际次数: ${counts[idx]}</span>`;
+            },
+            borderColor: '#d4af37', textStyle: { fontSize: 15 }
+        },
+        legend: { textStyle: { fontSize: 15, color: '#aa8233' }, data: ['实际占比 (%)', '理论基准线'], left: 'left' },
+        grid: { containLabel: true, left: '8%', right: '8%', top: '15%', bottom: '10%' },
+        xAxis: {
+            type: 'category', data: xAxis,
+            axisLabel: { rotate: xAxis.length > 12 ? 35 : 25, interval: 0, fontSize: 13, color: '#8b6f30' },
+            axisLine: { lineStyle: { color: '#c9a53b' } }
+        },
+        yAxis: {
+            type: 'value', name: '占比 (%)', min: 0, max: yMax,
+            axisLabel: { fontSize: 14, formatter: '{value}%' },
+            nameTextStyle: { fontSize: 15, color: '#b88c3a' }
+        },
+        series: [
+            { name: '实际占比 (%)', type: 'bar', data: actual, barWidth: '58%', itemStyle: { borderRadius: [8,8,0,0], color: '#F2C94C' } },
+            { name: '理论基准线', type: 'line', data: theory, lineStyle: { color: '#B8860B', width: 3, type: 'dashed' }, symbol: 'circle', symbolSize: 7 }
+        ]
+    });
+}
+
+// 渲染所有图表（独立ID）
+makeChart("c01_front", frontSum.map(v=>v[0]), frontSum, 20);
+makeChart("c02_span", span.map(v=>v[0]), span, 22);
+makeChart("c03_ratio", ratio.map(v=>v[0]), ratio, 20);
+makeChart("c04_parity", parity.map(v=>v[0]), parity, 38);
+makeChart("c05_size", size.map(v=>v[0]), size, 38);
+makeChart("c06_consecutive", consecutive.map(v=>v[0]), consecutive, 55);
+makeChart("c07_ac", ac.map(v=>v[0]), ac, 45);
+makeChart("c08_backparity", backParity.map(v=>v[0]), backParity, 60);
+makeChart("c09_backsize", backSize.map(v=>v[0]), backSize, 60);
+
+// 自适应
+window.addEventListener('resize', () => {
+    const ids = ["c01_front","c02_span","c03_ratio","c04_parity","c05_size","c06_consecutive","c07_ac","c08_backparity","c09_backsize"];
+    ids.forEach(id => { const inst = echarts.getInstanceByDom(document.getElementById(id)); if(inst) inst.resize(); });
+});
+</script>
+</body>
+</html>
