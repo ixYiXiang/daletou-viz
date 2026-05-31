@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>双色球 · 数据可视化 | 规范2.0版</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ----- 全局样式 ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #fef7e8;
+            background-image: radial-gradient(circle at 10% 20%, #fff6e6 2%, #f8efdd 100%);
+            font-family: 'Segoe UI', 'Roboto', 'Poppins', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            padding: 32px 28px;
+            color: #2c2416;
+            font-size: 15px;
+            line-height: 1.45;
+        }
+
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* ----- 头部 .hero ----- */
+        .hero {
+            margin-bottom: 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            background: rgba(255, 252, 240, 0.55);
+            backdrop-filter: blur(12px);
+            border-radius: 42px 42px 0 0;
+            padding: 20px 30px 16px 30px;
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+        }
+        .title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a0762c, #d4af37, #b8860b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .title p {
+            color: #7a622e;
+            margin-top: 6px;
+            font-size: 15px;
+        }
+        .badge {
+            background: rgba(255, 255, 245, 0.7);
+            backdrop-filter: blur(4px);
+            border-radius: 50px;
+            padding: 8px 24px;
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            font-size: 15px;
+            font-weight: 600;
+            color: #826e3a;
+        }
+
+        /* ----- 卡片 .card ----- */
+        .card {
+            background: rgba(255, 255, 250, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 36px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 48px;
+            overflow: hidden;
+            transition: all 0.25s;
+        }
+        .card:hover {
+            background: rgba(255, 255, 250, 0.85);
+            border-color: rgba(212, 175, 55, 0.6);
+            box-shadow: 0 18px 32px -12px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding: 20px 32px 12px 32px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+        }
+        .icon {
+            background: rgba(250, 245, 225, 0.8);
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 32px;
+            font-size: 1.8rem;
+            color: #d4af37;
+            border: 1px solid #e9daaa;
+        }
+        .card-header h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #4a381c;
+        }
+        .card-header span {
+            font-size: 0.9rem;
+            color: #b49454;
+            margin-left: 12px;
+        }
+
+        /* ----- 双栏布局 .dual ----- */
+        .dual {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            padding: 24px 32px 32px 32px;
+        }
+        .chart-pane {
+            flex: 1.5;
+            min-width: 300px;
+            background: rgba(255, 255, 248, 0.6);
+            border-radius: 32px;
+            padding: 12px 6px 6px 6px;
+            border: 1px solid rgba(210, 180, 80, 0.2);
+        }
+        .table-pane {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 248, 0.6);
+            border-radius: 32px;
+            border: 1px solid rgba(210, 180, 80, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+        .table-pane h4 {
+            padding: 16px 22px 8px 22px;
+            font-size: 16px;
+            color: #ab8a40;
+            font-weight: 700;
+            border-bottom: 1px dashed rgba(190, 160, 70, 0.4);
+        }
+
+        /* ----- 滚动区域 .scroll ----- */
+        .scroll {
+            max-height: 380px;
+            overflow-y: auto;
+            padding: 0 16px 16px 16px;
+        }
+        .scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scroll::-webkit-scrollbar-track {
+            background: rgba(200, 180, 120, 0.2);
+            border-radius: 8px;
+        }
+        .scroll::-webkit-scrollbar-thumb {
+            background: #d4af37;
+            border-radius: 8px;
+        }
+
+        /* ----- 表格 .data-table （含偏差颜色高优先级选择器）----- */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px;
+        }
+        .data-table th {
+            background: rgba(240, 235, 210, 0.6);
+            padding: 12px 8px;
+            color: #7a5f2a;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            font-size: 15px;
+        }
+        .data-table td {
+            padding: 10px 6px;
+            text-align: center;
+            border-bottom: 1px solid rgba(180, 150, 70, 0.2);
+            color: #3a2e17;
+            font-size: 15px;
+        }
+        /* 偏差颜色：必须在 .data-table td 之后，且选择器更具体 */
+        .data-table td.positive {
+            color: #1f8a3e;
+            font-weight: bold;
+        }
+        .data-table td.negative {
+            color: #cb3b2a;
+            font-weight: bold;
+        }
+
+        /* ----- 图表容器 .chart ----- */
+        .chart {
+            width: 100%;
+            height: 400px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 14px;
+            color: #8b7a52;
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            padding-top: 24px;
+        }
+
+        /* ----- 响应式断点 860px ----- */
+        @media (max-width: 860px) {
+            body { padding: 20px; }
+            .card-header h2 { font-size: 1.3rem; }
+            .chart { height: 300px; }
+            .dual { flex-direction: column; }
+            .data-table th, .data-table td { font-size: 14px; padding: 8px 4px; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="hero">
+        <div class="title">
+            <h1><i class="fas fa-chart-line"></i> 双色球 · 数据可视化</h1>
+            <p>红球和值 · 奇偶比 · 大小比 · 区间比 · 跨度 · 连号组数 · AC值 · 蓝球奇偶/大小 | 规范2.0 · 偏差红绿</p>
+        </div>
+        <div class="badge"><i class="fas fa-database"></i> 基于 3,456 期真实统计 | 悬浮即见详情</div>
+    </div>
+
+    <!-- ========== 9个独立卡片，遵循命名 c01_xxx / t01_xxx ========== -->
+    <!-- 1. 红球和值 -->
+    <div class="card">
+        <div class="card-header"><div class="icon"><i class="fas fa-chart-line"></i></div><h2>红球和值分布 <span>区间 21~183</span></h2></div>
+        <div class="dual">
+            <div class="chart-pane"><div id="c01_sum" class="chart"></div></div>
+            <div class="table-pane">
+                <h4>偏差明细表</h4>
+                <div class="scroll"><table class="data-table" id="t01_sum"><thead><tr><th>区间</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 奇偶比 -->
+    <div class="card">
+        <div class="card-header"><div class="icon"><i class="fas fa-venus-mars"></i></div><h2>红球奇偶比 <span>奇数:偶数</span></h2></div>
+        <div class="dual">
+            <div class="chart-pane"><div id="c02_parity" class="chart"></div></div>
+            <div class="table-pane">
+                <h4>奇偶形态偏差</h4>
+                <div class="scroll"><table class="data-table" id="t02_parity"><thead><tr><th>奇偶比</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 大小比 -->
+    <div class="card">
+        <div class="card-header"><div class="icon"><i class="fas fa-weight-hanging"></i></div><h2>红球大小比 <span>1-16小 / 17-33大</span></h2></div>
+        <div class="dual">
+            <div class="chart-pane"><div id="c03_size" class="chart"></div></div>
+            <div class="table-pane">
+                <h4>大小组合对照</h4>
+                <div class="scroll"><table class="data-table" id="t03_size"><thead><tr><th>大小比</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 区间比（三区） -->
+    <div class="card">
+        <div class="card-header"><div class="icon"><i class="fas fa-layer-group"></i></div><h2>三区区间比 <span>1-11 / 12-22 / 23-33</span></h2></div>
+        <div class="dual">
+            <div class="chart-pane"><div id="c04_ratio" class="chart"></div></div>
+            <div class="table-pane">
+                <h4>区间组合偏差</h4>
+                <div class="scroll"><table class="data-table" id="t04_ratio"><thead><tr><th>区间比</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 跨度 -->
+    <div class="card">
+        <div class="card-header"><div class="icon"><i class="fas fa-arrows-alt-h"></i></div><h2>红球跨度分布 <span>跨度区间 5~32</span></h2></div>
+        <div class="dual">
+            <div class="chart-pane"><div id="c05_span" class="chart"></div></div>
+            <div class="table-pane">
+                <h4>跨度偏差分析</h4>
+                <div class="scroll"><table class="data-table" id="t05_span"><thead><tr><th>跨度区间</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. 连号组数 -->
+    <div class="card">
+        <div class="card-header"><div class="icon"><i class="fas fa-link"></i></div><h2>连号组数分布 <span>0组 / 1组 / 2组 / 3+组</span></h2></div>
+        <div class="dual">
+            <div class="chart-pane"><div id="c06_consecutive" class="chart"></div></div>
+            <div class="table-pane">
+                <h4>连号频率统计</h4>
+                <div class="scroll"><table class="data-table" id="t06_consecutive"><thead><tr><th>连号组数</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. AC值 -->
+    <div class="card">
+        <div class="card-header"><div class="icon"><i class="fas fa-calculator"></i></div><h2>AC值分布 <span>复杂度 0~10</span></h2></div>
+        <div class="dual">
+            <div class="chart-pane"><div id="c07_ac" class="chart"></div></div>
+            <div class="table-pane">
+                <h4>AC值偏差统计</h4>
+                <div class="scroll"><table class="data-table" id="t07_ac"><thead><tr><th>AC值</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. 蓝球奇偶 -->
+    <div class="card">
+        <div class="card-header"><div class="icon"><i class="fas fa-circle-half-stroke"></i></div><h2>蓝球奇偶分布 <span>奇数 / 偶数</span></h2></div>
+        <div class="dual">
+            <div class="chart-pane"><div id="c08_blueparity" class="chart"></div></div>
+            <div class="table-pane">
+                <h4>蓝球奇偶形态</h4>
+                <div class="scroll"><table class="data-table" id="t08_blueparity"><thead><tr><th>奇偶</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. 蓝球大小 -->
+    <div class="card">
+        <div class="card-header"><div class="icon"><i class="fas fa-expand-arrows-alt"></i></div><h2>蓝球大小分布 <span>大(09-16) / 小(01-08)</span></h2></div>
+        <div class="dual">
+            <div class="chart-pane"><div id="c09_bluesize" class="chart"></div></div>
+            <div class="table-pane">
+                <h4>蓝球大小分布</h4>
+                <div class="scroll"><table class="data-table" id="t09_bluesize"><thead><tr><th>大小</th><th>实际次数</th><th>实际占比</th><th>理论占比</th><th>偏差</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer"><i class="fas fa-chart-simple"></i> 柱状图：实际占比 (%) · 金色虚线：理论基准线 · 悬浮显示完整数据 · 偏差绿色为正，红色为负</div>
+</div>
+
+<script>
+    // ======================= 双色球数据集（根据表格） ========================
+    // 红球和值
+    const sumData = [
+        ["21-30",1,0.0003,0.0001,0.0002],["31-40",1,0.0003,0.001,-0.0007],
+        ["41-50",23,0.0067,0.0055,0.0011],["51-60",77,0.0223,0.019,0.0033],
+        ["61-70",164,0.0474,0.0467,0.0007],["71-80",323,0.0934,0.0896,0.0038],
+        ["81-90",497,0.1438,0.1387,0.005],["91-100",601,0.1739,0.1725,0.0013],
+        ["101-110",630,0.1822,0.1777,0.0046],["111-120",516,0.1493,0.1506,-0.0013],
+        ["121-130",345,0.0998,0.1045,-0.0047],["131-140",173,0.05,0.0585,-0.0085],
+        ["141-150",82,0.0237,0.0253,-0.0016],["151-160",20,0.0058,0.0083,-0.0025],
+        ["161-170",3,0.0009,0.0018,-0.0009],["171-180",1,0.0003,0.0002,0.0001],
+        ["181-183",0,0,0,0]
+    ];
+    // 奇偶比
+    const parityData = [
+        ["0:6",34,0.0098,0.0072,0.0026],["1:5",234,0.0677,0.067,0.0007],
+        ["2:4",794,0.2297,0.2229,0.0068],["3:3",1231,0.3561,0.3442,0.0119],
+        ["4:2",844,0.2441,0.2576,-0.0134],["5:1",275,0.0795,0.0898,-0.0103],
+        ["6:0",45,0.013,0.0113,0.0017]
+    ];
+    // 大小比
+    const sizeData = [
+        ["0:6",23,0.0067,0.0072,-0.0006],["1:5",229,0.0662,0.0667,-0.0004],
+        ["2:4",794,0.2297,0.2238,0.0058],["3:3",1219,0.3526,0.3441,0.0085],
+        ["4:2",879,0.2543,0.2575,-0.0032],["5:1",287,0.083,0.0895,-0.0065],
+        ["6:0",26,0.0075,0.0111,-0.0036]
+    ];
+    // 区间比（28行）
+    const ratioData = [
+        ["0:0:6",1,0.0003,0.0004,-0.0001],["0:1:5",8,0.0023,0.0045,-0.0022],
+        ["0:2:4",48,0.0139,0.0162,-0.0023],["0:3:3",77,0.0223,0.0247,-0.0024],
+        ["0:4:2",60,0.0174,0.0162,0.0012],["0:5:1",19,0.0055,0.0046,0.0009],
+        ["0:6:0",1,0.0003,0.0004,-0.0002],["1:0:5",11,0.0032,0.0045,-0.0014],
+        ["1:1:4",111,0.0321,0.0361,-0.004],["1:2:3",309,0.0894,0.0898,-0.0004],
+        ["1:3:2",317,0.0917,0.0904,0.0013],["1:4:1",127,0.0367,0.0358,0.0009],
+        ["1:5:0",16,0.0046,0.0045,0.0001],["2:0:4",52,0.015,0.0166,-0.0015],
+        ["2:1:3",297,0.0859,0.0904,-0.0045],["2:2:2",532,0.1539,0.1499,0.004],
+        ["2:3:1",301,0.0871,0.0903,-0.0033],["2:4:0",57,0.0165,0.0164,0.0001],
+        ["3:0:3",88,0.0255,0.0246,0.0009],["3:1:2",321,0.0929,0.0906,0.0022],
+        ["3:2:1",325,0.094,0.0902,0.0038],["3:3:0",101,0.0292,0.0243,0.0049],
+        ["4:0:2",45,0.013,0.0164,-0.0034],["4:1:1",124,0.0359,0.0361,-0.0002],
+        ["4:2:0",73,0.0211,0.0166,0.0046],["5:0:1",17,0.0049,0.0045,0.0004],
+        ["5:1:0",16,0.0046,0.0046,0.0001],["6:0:0",3,0.0009,0.0004,0.0005]
+    ];
+    // 跨度
+    const spanData = [
+        ["5-7",1,0.0003,0.0005,-0.0002],["8-10",12,0.0035,0.005,-0.0015],
+        ["11-13",65,0.0188,0.0192,-0.0004],["14-16",187,0.0541,0.0489,0.0052],
+        ["17-19",346,0.1001,0.0968,0.0033],["20-22",534,0.1545,0.1579,-0.0035],
+        ["23-25",746,0.2158,0.2145,0.0013],["26-28",809,0.234,0.2405,-0.0065],
+        ["29-31",673,0.1947,0.1881,0.0066],["32",84,0.0243,0.0287,-0.0044]
+    ];
+    // 连号组数
+    const consecutiveData = [
+        ["0",1208,0.3494,0.3406,0.0088],["1",1802,0.5213,0.527,-0.0057],
+        ["2",440,0.1273,0.1294,-0.0021],["3+",7,0.002,0.003,-0.001]
+    ];
+    // AC值
+    const acData = [
+        ["0",0,0,0.0001,-0.0001],["1",0,0,0.0004,-0.0004],
+        ["2",10,0.0029,0.0028,0.0001],["3",32,0.0093,0.0087,0.0006],
+        ["4",121,0.035,0.0295,0.0055],["5",216,0.0625,0.0617,0.0008],
+        ["6",568,0.1643,0.1664,-0.0021],["7",722,0.2089,0.2027,0.0062],
+        ["8",1021,0.2953,0.3072,-0.0118],["9",497,0.1438,0.1436,0.0002],
+        ["10",270,0.0781,0.077,0.0011]
+    ];
+    // 蓝球奇偶
+    const blueParityData = [
+        ["偶",1709,0.4944,0.5,-0.0056],["奇",1748,0.5056,0.5,0.0056]
+    ];
+    // 蓝球大小
+    const blueSizeData = [
+        ["大",1749,0.5059,0.4997,0.0063],["小",1708,0.4941,0.5003,-0.0063]
+    ];
+
+    // ========== 表格填充函数（添加 positive/negative 类，确保偏差颜色） ==========
+    function fillTable(tableId, data) {
+        const tbody = document.querySelector(`#${tableId} tbody`);
+        if (!tbody) return;
+        tbody.innerHTML = "";
+        data.forEach(row => {
+            const dev = row[4];
+            const cls = dev >= 0 ? 'positive' : 'negative';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight:500;">${row[0]}</td>
+                <td>${row[1]}</td>
+                <td>${(row[2]*100).toFixed(2)}%</td>
+                <td>${(row[3]*100).toFixed(2)}%</td>
+                <td class="${cls}">${(dev*100).toFixed(4)}%</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    fillTable("t01_sum", sumData);
+    fillTable("t02_parity", parityData);
+    fillTable("t03_size", sizeData);
+    fillTable("t04_ratio", ratioData);
+    fillTable("t05_span", spanData);
+    fillTable("t06_consecutive", consecutiveData);
+    fillTable("t07_ac", acData);
+    fillTable("t08_blueparity", blueParityData);
+    fillTable("t09_bluesize", blueSizeData);
+
+    // ========== 图表构建函数（强制字号、偏差红绿色悬浮提示） ==========
+    function buildChart(containerId, xAxis, dataset, yMax) {
+        const dom = document.getElementById(containerId);
+        if (!dom) return;
+        const chart = echarts.init(dom);
+        const actual = dataset.map(r => r[2] * 100);
+        const theory = dataset.map(r => r[3] * 100);
+        const counts = dataset.map(r => r[1]);
+        const devs = dataset.map(r => r[4] * 100);
+        chart.setOption({
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' },
+                formatter: (params) => {
+                    const idx = params[0].dataIndex;
+                    const devVal = devs[idx];
+                    const devSign = devVal >= 0 ? `+${devVal.toFixed(4)}%` : `${devVal.toFixed(4)}%`;
+                    const devColor = devVal >= 0 ? '#1f8a3e' : '#cb3b2a';
+                    return `<strong style="font-size:15px;">${xAxis[idx]}</strong><br/>
+                            <span style="font-size:15px;">📊 实际占比: ${actual[idx].toFixed(2)}%</span><br/>
+                            <span style="font-size:15px;">📐 理论占比: ${theory[idx].toFixed(2)}%</span><br/>
+                            <span style="font-size:15px;">⚖️ 偏差: <span style="color:${devColor};">${devSign}</span></span><br/>
+                            <span style="font-size:15px;">🎯 实际次数: ${counts[idx]}</span>`;
+                },
+                borderColor: '#d4af37',
+                textStyle: { fontSize: 15 }
+            },
+            legend: {
+                textStyle: { fontSize: 15, color: '#aa8233' },
+                data: ['实际占比 (%)', '理论基准线'],
+                left: 'left'
+            },
+            grid: { containLabel: true, left: '8%', right: '8%', top: '15%', bottom: '10%' },
+            xAxis: {
+                type: 'category',
+                data: xAxis,
+                axisLabel: { rotate: xAxis.length > 12 ? 35 : 25, interval: 0, fontSize: 13, color: '#8b6f30' },
+                axisLine: { lineStyle: { color: '#c9a53b' } }
+            },
+            yAxis: {
+                type: 'value',
+                name: '占比 (%)',
+                min: 0,
+                max: yMax,
+                axisLabel: { fontSize: 14, formatter: '{value}%' },
+                nameTextStyle: { fontSize: 15, color: '#b88c3a' }
+            },
+            series: [
+                {
+                    name: '实际占比 (%)',
+                    type: 'bar',
+                    data: actual,
+                    barWidth: '55%',
+                    itemStyle: { borderRadius: [8,8,0,0], color: '#F2C94C' }
+                },
+                {
+                    name: '理论基准线',
+                    type: 'line',
+                    data: theory,
+                    lineStyle: { color: '#B8860B', width: 2.5, type: 'dashed' },
+                    symbol: 'circle',
+                    symbolSize: 6
+                }
+            ]
+        });
+    }
+
+    // 渲染所有图表
+    buildChart("c01_sum", sumData.map(v=>v[0]), sumData, 20);
+    buildChart("c02_parity", parityData.map(v=>v[0]), parityData, 38);
+    buildChart("c03_size", sizeData.map(v=>v[0]), sizeData, 38);
+    buildChart("c04_ratio", ratioData.map(v=>v[0]), ratioData, 18);
+    buildChart("c05_span", spanData.map(v=>v[0]), spanData, 25);
+    buildChart("c06_consecutive", consecutiveData.map(v=>v[0]), consecutiveData, 55);
+    buildChart("c07_ac", acData.map(v=>v[0]), acData, 32);
+    buildChart("c08_blueparity", blueParityData.map(v=>v[0]), blueParityData, 55);
+    buildChart("c09_bluesize", blueSizeData.map(v=>v[0]), blueSizeData, 55);
+
+    // 窗口自适应
+    window.addEventListener('resize', () => {
+        const ids = ["c01_sum","c02_parity","c03_size","c04_ratio","c05_span","c06_consecutive","c07_ac","c08_blueparity","c09_bluesize"];
+        ids.forEach(id => {
+            const inst = echarts.getInstanceByDom(document.getElementById(id));
+            if (inst) inst.resize();
+        });
+    });
+</script>
+</body>
+</html>
